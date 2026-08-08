@@ -1,0 +1,56 @@
+#!/bin/bash
+set -e  # Exit immediately if a command exits with a non-zero status
+
+# Own log file, separate from userdata.log - this script is invoked on demand
+# via `aws ssm send-command` (not just once at boot), so repeated runs should
+# not get mixed up with the one-time cloud-init log.
+exec > /var/log/configure-agent.log 2>&1
+
+# ---- Azure Pipelines agent (unattended registration) ----
+# url/pool/agent_name are baked in at plan time via templatefile() - only the
+# PAT is fetched at runtime, as a raw string, from SSM Parameter Store.
+AZP_URL="${azp_url}"
+AZP_POOL="${azp_pool}"
+AZP_AGENT_NAME="${azp_agent_name}"
+AZP_PAT_PARAM="${ado_pat_parameter_name}"
+AZP_USER="ubuntu"
+AZP_AGENT_DIR="/home/$AZP_USER/azagent"
+
+# Region isn't guaranteed to be set for the root user's aws cli config, so read it from IMDSv2.
+IMDS_TOKEN=$(curl -sX PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+AWS_REGION=$(curl -s -H "X-aws-ec2-metadata-token: $IMDS_TOKEN" http://169.254.169.254/latest/meta-data/placement/region)
+
+# Decrypted via the instance's IAM role - never embedded in this script or visible in plaintext
+# EC2 metadata/console output.
+AZP_TOKEN=$(aws ssm get-parameter --name "$AZP_PAT_PARAM" --with-decryption --region "$AWS_REGION" --query "Parameter.Value" --output text)
+
+AZP_AGENT_VERSION=$(curl -fsS https://api.github.com/repos/microsoft/azure-pipelines-agent/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+mkdir -p "$AZP_AGENT_DIR"
+curl -fsSL "https://download.agent.dev.azure.com/agent/$AZP_AGENT_VERSION/vsts-agent-linux-x64-$AZP_AGENT_VERSION.tar.gz" -o /tmp/vsts-agent.tar.gz
+tar zxvf /tmp/vsts-agent.tar.gz -C "$AZP_AGENT_DIR"
+chown -R "$AZP_USER:$AZP_USER" "$AZP_AGENT_DIR"
+
+# The agent must not be configured/run as root - run config.sh as the ubuntu user.
+# --replace is already safe to re-run: it de-registers any existing agent identity
+# with the same name and re-registers fresh, overwriting local credentials in place.
+sudo -u "$AZP_USER" -H bash -c "cd '$AZP_AGENT_DIR' && ./config.sh --unattended \
+  --url '$AZP_URL' \
+  --auth pat \
+  --token '$AZP_TOKEN' \
+  --pool '$AZP_POOL' \
+  --agent '$AZP_AGENT_NAME' \
+  --acceptTeeEula \
+  --replace"
+
+# Install and start as a systemd service so it survives reboots. svc.sh install
+# refuses to reinstall over an existing unit, so this script is safe to re-run
+# against an already-configured agent (PAT rotation, pool change, etc) by
+# uninstalling any prior service first.
+cd "$AZP_AGENT_DIR"
+if [ -f "$AZP_AGENT_DIR/.service" ]; then
+  echo "Existing service registration found - stopping and uninstalling before reconfiguring."
+  ./svc.sh stop || true
+  ./svc.sh uninstall || true
+fi
+./svc.sh install "$AZP_USER"
+./svc.sh start

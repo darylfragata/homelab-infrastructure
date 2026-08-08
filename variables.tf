@@ -1,0 +1,91 @@
+variable "project_name" {
+  description = "Project name used for resource names and tags."
+  type        = string
+}
+
+variable "aws_region" {
+  description = "AWS region for regional resources."
+  type        = string
+  default     = "ap-southeast-1"
+}
+
+variable "vpc_cidr_block" {
+  description = "VPC CIDR block used only when enable_vpc is true."
+  type        = string
+}
+
+variable "private_subnet_cidrs" {
+  description = "Private subnet CIDR blocks used only when enable_vpc is true."
+  type        = list(string)
+}
+
+variable "public_subnet_cidrs" {
+  description = "Public subnet CIDR blocks used only when enable_vpc is true."
+  type        = list(string)
+}
+
+variable "environment" {
+  description = "Deployment environment name."
+  type        = string
+  default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "prod"], var.environment)
+    error_message = "Environment must be dev or prod."
+  }
+}
+
+variable "budget_alert_email" {
+  description = "Email address to notify when monthly spend crosses the budget threshold. Leave null to skip email notifications."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.budget_alert_email == null || can(regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", var.budget_alert_email))
+    error_message = "Budget alert email must be a valid email address or null."
+  }
+}
+
+variable "budget_limit_usd" {
+  description = "Monthly AWS Budget limit in USD."
+  type        = number
+  default     = 10
+
+  validation {
+    condition     = var.budget_limit_usd > 0
+    error_message = "Budget limit must be greater than zero."
+  }
+}
+
+variable "enable_budget" {
+  description = "Whether to create an AWS monthly cost budget."
+  type        = bool
+  default     = true
+}
+
+variable "instance_type" {
+  description = "EC2 instance type for the Azure DevOps agent."
+  type        = string
+}
+
+variable "azp_url" {
+  description = "Azure DevOps organization URL used to register the self-hosted agent."
+  type        = string
+  default     = "https://dev.azure.com/df-homelab"
+}
+
+variable "azp_pool" {
+  description = "Azure DevOps agent pool name to register the agent into."
+  type        = string
+  default     = "Default"
+}
+
+variable "azp_agent_name" {
+  description = "Fixed name the agent registers under in the pool."
+  type        = string
+}
+
+variable "ado_pat_ssm_parameter_name" {
+  description = "SSM Parameter Store name (SecureString) holding the Azure DevOps PAT. Managed out-of-band via `aws ssm put-parameter`, not by Terraform (see ADR-002 in homelab-documentation)."
+  type        = string
+}
