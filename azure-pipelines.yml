@@ -16,8 +16,8 @@ stages:
     steps:
     - template: templates/terraform-steps.yml
       parameters:
-        environment: dev
-        backendConfig: backend/dev.hcl
+        environment: $(environment)
+        backendConfig: $(backendConfig)
         tfvarsUri: $(tfvarsUriDev)
 
 - stage: Prod
@@ -35,6 +35,6 @@ stages:
           steps:
           - template: templates/terraform-steps.yml
             parameters:
-              environment: prod
-              backendConfig: backend/prod.hcl
+              environment: $(environment)
+              backendConfig: $(backendConfig)
               tfvarsUri: $(tfvarsUriProd)
