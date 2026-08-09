@@ -11,6 +11,8 @@ stages:
   displayName: 'Terraform - Dev'
   jobs:
   - job: TerraformDev
+    variables:
+    - group: dev
     steps:
     - template: templates/terraform-steps.yml
       parameters:
@@ -25,6 +27,8 @@ stages:
   jobs:
   - deployment: TerraformProd
     environment: prod   # ADO Environment - approval gate configured in Library UI, not here
+    variables:
+    - group: prod
     strategy:
       runOnce:
         deploy:
