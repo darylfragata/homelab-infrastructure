@@ -147,6 +147,7 @@ resource "aws_ssm_document" "configure_agent" {
             azp_pool               = var.azp_pool
             azp_agent_name         = var.azp_agent_name
             ado_pat_parameter_name = var.ado_pat_ssm_parameter_name
+            aws_region             = var.aws_region
           })
         ]
       }

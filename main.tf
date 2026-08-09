@@ -32,6 +32,7 @@ module "ado_agent" {
   security_group = local.ec2.security_group
   vpc_id         = module.vpc.vpc_id
 
+  aws_region                 = var.aws_region
   azp_url                    = var.azp_url
   azp_pool                   = var.azp_pool
   azp_agent_name             = var.azp_agent_name
