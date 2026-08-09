@@ -35,5 +35,6 @@ module "ado_agent" {
   azp_url                    = var.azp_url
   azp_pool                   = var.azp_pool
   azp_agent_name             = var.azp_agent_name
+  ado_pat                    = var.ado_pat
   ado_pat_ssm_parameter_name = var.ado_pat_ssm_parameter_name
 }

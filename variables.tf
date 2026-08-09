@@ -86,6 +86,12 @@ variable "azp_agent_name" {
 }
 
 variable "ado_pat_ssm_parameter_name" {
-  description = "SSM Parameter Store name (SecureString) holding the Azure DevOps PAT. Managed out-of-band via `aws ssm put-parameter`, not by Terraform (see ADR-002 in homelab-documentation)."
+  description = "SSM Parameter Store name (SecureString) holding the Azure DevOps PAT. Also used as the resource name for aws_ssm_parameter.ado_pat, so the IAM read policy and the parameter itself always stay in sync."
   type        = string
+}
+
+variable "ado_pat" {
+  description = "Azure DevOps Personal Access Token (Agent Pools: Read & manage scope). Supply via TF_VAR_ado_pat or an untracked/secured tfvars file - never commit this value."
+  type        = string
+  sensitive   = true
 }

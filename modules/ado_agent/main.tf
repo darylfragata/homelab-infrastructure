@@ -11,6 +11,15 @@ resource "aws_security_group" "this" {
   description = "${var.name} security group"
   vpc_id      = var.vpc_id
 
+  # A rename forces replacement. Without this, Terraform tries to delete the
+  # old SG before the instance is repointed at a new one, which AWS refuses
+  # (DependencyViolation) since it's still attached to the running instance's
+  # ENI - the provider then retries the delete indefinitely. create_before_destroy
+  # ensures the new SG exists and the instance is updated first.
+  lifecycle {
+    create_before_destroy = true
+  }
+
   dynamic "ingress" {
     for_each = var.security_group.ingress
     content {
@@ -113,19 +122,14 @@ resource "aws_iam_role_policy_attachment" "ado_pat" {
   policy_arn = aws_iam_policy.ado_pat.arn
 }
 
-# Existence check only - never decrypts, never referenced for its value. Fails
-# plan/apply loudly if the PAT parameter hasn't been (re)seeded out-of-band yet,
-# instead of failing silently later inside an `aws ssm send-command` invocation.
-# Terraform no longer creates or writes this parameter (see ADR-002 in
-# homelab-documentation) - the operator manages its value directly via
-# `aws ssm put-parameter`.
-data "aws_ssm_parameter" "ado_pat" {
-  name            = var.ado_pat_ssm_parameter_name
-  with_decryption = false
+resource "aws_ssm_parameter" "ado_pat" {
+  name  = var.ado_pat_ssm_parameter_name
+  type  = "SecureString"
+  value = var.ado_pat
 }
 
 resource "aws_ssm_document" "configure_agent" {
-  name            = "${var.name}-configure-agent"
+  name            = "configure-${var.name}"
   document_type   = "Command"
   document_format = "JSON"
 

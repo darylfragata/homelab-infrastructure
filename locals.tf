@@ -19,7 +19,7 @@ locals {
   }
 
   ec2 = {
-    name          = "${var.environment}-cicd-agent"
+    name          = "ado-cicd-agent"
     ami_id        = "ami-03acbba64aef9bf5c" # Ubuntu Server 24.04 LTS (HVM), SSD Volume Type
     instance_type = var.instance_type
     security_group = {
