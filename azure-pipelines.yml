@@ -1,14 +1,36 @@
 trigger:
-- release/*
+  branches:
+    include:
+    - release/*
 
 pool:
-  vmImage: ubuntu-latest
+  name: AWS-Agents   # self-hosted agent pool (matches azp_pool in tfvars)
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+stages:
+- stage: Dev
+  displayName: 'Terraform - Dev'
+  jobs:
+  - job: TerraformDev
+    steps:
+    - template: templates/terraform-steps.yml
+      parameters:
+        environment: dev
+        backendConfig: backend/dev.hcl
+        tfvarsUri: $(tfvarsUriDev)
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- stage: Prod
+  displayName: 'Terraform - Prod'
+  dependsOn: Dev
+  condition: succeeded()
+  jobs:
+  - deployment: TerraformProd
+    environment: prod   # ADO Environment - approval gate configured in Library UI, not here
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - template: templates/terraform-steps.yml
+            parameters:
+              environment: prod
+              backendConfig: backend/prod.hcl
+              tfvarsUri: $(tfvarsUriProd)
