@@ -84,7 +84,8 @@ resource "aws_iam_policy" "this" {
           "cloudfront:*",
           "route53:*",
           "budgets:*",
-          "kms:ListAliases"
+          "kms:ListAliases",
+          "kms:DescribeKey"
         ]
 
         Resource = "*"
