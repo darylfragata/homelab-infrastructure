@@ -201,9 +201,7 @@ resource "aws_ssm_document" "mount_data_volume" {
       inputs = {
         timeoutSeconds = "180"
         runCommand = [
-          templatefile("${path.module}/scripts/mount-data-volume.sh.tftpl", {
-            data_device_name = var.data_volume_device_name
-          })
+          file("${path.module}/scripts/mount-data-volume.sh")
         ]
       }
     }]

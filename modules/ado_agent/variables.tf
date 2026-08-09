@@ -71,7 +71,7 @@ variable "data_volume_type" {
 }
 
 variable "data_volume_device_name" {
-  description = "Device name to request from the AWS API for the data volume attachment (Nitro instances remap this to /dev/nvme*n1 internally; Ubuntu's udev rules expose it back under this name)."
+  description = "Device name to request from the AWS API for the data volume attachment. Purely an API-level request - on Nitro instances the volume actually shows up as a raw NVMe disk (see mount-data-volume.sh, which detects it directly instead of relying on this name)."
   type        = string
   default     = "/dev/sdf"
 }

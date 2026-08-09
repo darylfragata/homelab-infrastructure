@@ -4,22 +4,21 @@ set -e  # Exit immediately if a command exits with a non-zero status
 # Own log file; invoked on demand via aws ssm send-command, safe to re-run.
 exec > /var/log/mount-data-volume.log 2>&1
 
-# Nitro instances remap the requested device name to NVMe; Ubuntu's udev
-# rules re-create it as a symlink, which can take a few seconds to appear.
+# Nitro instances attach EBS volumes as raw NVMe disks (e.g. /dev/nvme1n1),
+# not under the requested device name - there's no udev rule on stock Ubuntu
+# to symlink it back. Identify the data volume as "the whole disk that isn't
+# the root disk" instead of guessing a device name.
 DATA_MOUNT="/mnt/ado-data"
+ROOT_DISK=$(lsblk -dno PKNAME "$(findmnt -no SOURCE /)")
 DATA_DEVICE=""
-for candidate in ${data_device_name} /dev/xvdf; do
-  for i in $(seq 1 30); do
-    if [ -e "$candidate" ]; then
-      DATA_DEVICE="$candidate"
-      break 2
-    fi
-    sleep 2
-  done
+for i in $(seq 1 30); do
+  DATA_DEVICE=$(lsblk -dno NAME,TYPE | awk -v root="$ROOT_DISK" '$2 == "disk" && $1 != root { print "/dev/" $1; exit }')
+  [ -n "$DATA_DEVICE" ] && break
+  sleep 2
 done
 
 if [ -z "$DATA_DEVICE" ]; then
-  echo "ERROR: data volume device never appeared - is aws_volume_attachment.data attached to this instance?" >&2
+  echo "ERROR: no data volume disk found (only the root disk, $ROOT_DISK) - is aws_volume_attachment.data attached to this instance?" >&2
   exit 1
 fi
 
