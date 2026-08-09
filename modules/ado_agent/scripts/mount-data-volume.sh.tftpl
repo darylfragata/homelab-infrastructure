@@ -1,16 +1,11 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# Own log file - this script is invoked on demand via `aws ssm send-command`
-# (see aws_ssm_document.mount_data_volume in main.tf), safe to re-run.
+# Own log file; invoked on demand via aws ssm send-command, safe to re-run.
 exec > /var/log/mount-data-volume.log 2>&1
 
-# ---- Data volume setup (git checkouts, tfvars, agent working data) ----
-# aws_ebs_volume.data / aws_volume_attachment.data (see main.tf) attach a
-# second disk requested as ${data_device_name}. Nitro instances (e.g. t3.*)
-# actually expose it as an NVMe device; Ubuntu's udev rules re-create the
-# requested device name (or /dev/xvdf) as a symlink, but that can take a few
-# seconds to appear after the attachment lands.
+# Nitro instances remap the requested device name to NVMe; Ubuntu's udev
+# rules re-create it as a symlink, which can take a few seconds to appear.
 DATA_MOUNT="/mnt/ado-data"
 DATA_DEVICE=""
 for candidate in ${data_device_name} /dev/xvdf; do
@@ -48,12 +43,11 @@ fi
 mkdir -p "$DATA_MOUNT/azagent" "$DATA_MOUNT/tfvars"
 chown -R "ubuntu:ubuntu" "$DATA_MOUNT"
 
-# Point the agent's working directory and tfvars dir at the data volume. Run
-# this document BEFORE configure_agent on a fresh instance so azagent doesn't
-# exist yet. If either path already exists as a real directory (e.g. tfvars,
-# created by userdata.sh, or azagent from a prior configure_agent run before
-# this volume existed), migrate its contents onto the data volume first so
-# nothing already there is lost or hidden underneath the new mount.
+# Symlink the agent's working directory and tfvars dir onto the data volume.
+# Run this before configure_agent on a fresh instance so azagent doesn't
+# exist yet. If a path already exists as a real directory (e.g. azagent from
+# a prior configure_agent run before this volume existed), migrate its
+# contents first so nothing is lost.
 for path in azagent tfvars; do
   target="/home/ubuntu/$path"
   dest="$DATA_MOUNT/$path"
@@ -61,7 +55,7 @@ for path in azagent tfvars; do
     shopt -s dotglob nullglob
     mv "$target"/* "$dest"/ 2>/dev/null || true
     shopt -u dotglob nullglob
-    rmdir "$target" 2>/dev/null || rm -rf "$target"
+    rmdir "$target" # fails loudly (set -e) if anything was left behind
   fi
   if [ ! -e "$target" ]; then
     ln -sfn "$dest" "$target"

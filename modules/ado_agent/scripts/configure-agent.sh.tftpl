@@ -1,22 +1,15 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# Own log file, separate from userdata.log - this script is invoked on demand
-# via `aws ssm send-command` (not just once at boot), so repeated runs should
-# not get mixed up with the one-time cloud-init log.
-#
-# fd 3 preserves the original stdout (what SSM captures as command output)
-# before it's redirected to the log file below - everything after this point
-# only reaches the log unless explicitly also written to fd 3.
+# Own log file; invoked on demand via aws ssm send-command, safe to re-run.
+# fd 3 keeps a copy of the real stdout (what SSM captures) before it's
+# redirected to the log file - use it for anything that should show up in
+# the SSM output, not just the log.
 exec 3>&1
 exec > /var/log/configure-agent.log 2>&1
 
-# ---- Pre-flight: data volume must already be mounted ----
-# The agent's working directory below lives on the data volume (see
-# mount-data-volume.sh.tftpl / aws_ssm_document.mount_data_volume), not the
-# 8GB root disk. Fail fast with a clear, actionable message - written to fd 3
-# so it's visible in the SSM command output - instead of silently installing
-# onto the root disk or failing later with a confusing error.
+# Fail fast if the data volume isn't mounted yet, instead of installing onto
+# the root disk or failing later with a confusing error.
 if ! mountpoint -q /mnt/ado-data; then
   echo "ERROR: /mnt/ado-data is not mounted. Run the mount_data_volume SSM document first (it formats/mounts the data volume), then re-run this document." | tee /dev/fd/3 >&2
   exit 1
@@ -69,9 +62,8 @@ fi
 ./svc.sh start
 
 # ---- Summary ----
-# Reaching here means every command above succeeded (set -e), so this block
-# doubles as a success confirmation. Written to fd 3 (the original stdout) as
-# well as the log, so it shows up in the SSM command output, not just on-disk.
+# Reaching here means everything above succeeded (set -e). Written to fd 3
+# so it shows up in the SSM output, not just the log.
 {
   echo "===== configure-agent.sh: SUCCESS ====="
   echo "ADO agent '$AZP_AGENT_NAME' registered in pool '$AZP_POOL' at $AZP_URL"

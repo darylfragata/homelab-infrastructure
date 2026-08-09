@@ -29,17 +29,7 @@ terraform --version
 git --version
 python3 --version
 
-# Azure Pipelines agent install/registration is handled separately, on demand,
-# via the "configure_agent" SSM Document (see modules/ado_agent/main.tf:
-# aws_ssm_document.configure_agent + configure-agent.sh.tftpl). It's invoked
-# with `aws ssm send-command` after boot, not baked into user_data - this lets
-# the agent be (re)configured without replacing the instance.
-#
-# Likewise, the data volume (git checkouts, tfvars) is formatted/mounted via
-# the "mount_data_volume" SSM Document (aws_ssm_document.mount_data_volume +
-# mount-data-volume.sh.tftpl), not here, so it can be (re)run on demand
+# The ADO agent install (configure_agent) and data volume mount
+# (mount_data_volume) are handled by separate SSM documents, invoked on
+# demand via `aws ssm send-command` - not here, so they can be re-run
 # without replacing the instance.
-
-# Create a directory for tfvars files and set ownership to the Azure Pipelines agent user
-mkdir -p "/home/ubuntu/tfvars"
-chown -R "ubuntu:ubuntu" "/home/ubuntu/tfvars"
