@@ -57,3 +57,21 @@ variable "azp_agent_name" {
   description = "Fixed name the agent registers under in the pool."
   type        = string
 }
+
+variable "data_volume_size" {
+  description = "Size (GB) of the EBS volume used for agent working data (git checkouts, tfvars, etc)."
+  type        = number
+  default     = 15
+}
+
+variable "data_volume_type" {
+  description = "EBS volume type for the agent data volume."
+  type        = string
+  default     = "gp3"
+}
+
+variable "data_volume_device_name" {
+  description = "Device name to request from the AWS API for the data volume attachment (Nitro instances remap this to /dev/nvme*n1 internally; Ubuntu's udev rules expose it back under this name)."
+  type        = string
+  default     = "/dev/sdf"
+}

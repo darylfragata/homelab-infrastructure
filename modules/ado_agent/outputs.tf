@@ -18,3 +18,13 @@ output "configure_agent_document_name" {
   description = "SSM Document name to invoke via `aws ssm send-command` to (re)configure/register the ADO agent on this instance."
   value       = aws_ssm_document.configure_agent.name
 }
+
+output "data_volume_id" {
+  description = "EBS volume ID of the agent data volume (git checkouts, tfvars), mounted at /mnt/ado-data."
+  value       = aws_ebs_volume.data.id
+}
+
+output "mount_data_volume_document_name" {
+  description = "SSM Document name to invoke via `aws ssm send-command` to format/mount the data volume. Run this before configure_agent on a fresh instance."
+  value       = aws_ssm_document.mount_data_volume.name
+}

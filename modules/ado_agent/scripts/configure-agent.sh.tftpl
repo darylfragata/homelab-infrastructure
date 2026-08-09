@@ -11,6 +11,17 @@ set -e  # Exit immediately if a command exits with a non-zero status
 exec 3>&1
 exec > /var/log/configure-agent.log 2>&1
 
+# ---- Pre-flight: data volume must already be mounted ----
+# The agent's working directory below lives on the data volume (see
+# mount-data-volume.sh.tftpl / aws_ssm_document.mount_data_volume), not the
+# 8GB root disk. Fail fast with a clear, actionable message - written to fd 3
+# so it's visible in the SSM command output - instead of silently installing
+# onto the root disk or failing later with a confusing error.
+if ! mountpoint -q /mnt/ado-data; then
+  echo "ERROR: /mnt/ado-data is not mounted. Run the mount_data_volume SSM document first (it formats/mounts the data volume), then re-run this document." | tee /dev/fd/3 >&2
+  exit 1
+fi
+
 # ---- Azure Pipelines agent (unattended registration) ----
 # url/pool/agent_name are baked in at plan time via templatefile() - only the
 # PAT is fetched at runtime, as a raw string, from SSM Parameter Store.

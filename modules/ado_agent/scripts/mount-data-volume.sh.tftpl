@@ -1,0 +1,72 @@
+#!/bin/bash
+set -e  # Exit immediately if a command exits with a non-zero status
+
+# Own log file - this script is invoked on demand via `aws ssm send-command`
+# (see aws_ssm_document.mount_data_volume in main.tf), safe to re-run.
+exec > /var/log/mount-data-volume.log 2>&1
+
+# ---- Data volume setup (git checkouts, tfvars, agent working data) ----
+# aws_ebs_volume.data / aws_volume_attachment.data (see main.tf) attach a
+# second disk requested as ${data_device_name}. Nitro instances (e.g. t3.*)
+# actually expose it as an NVMe device; Ubuntu's udev rules re-create the
+# requested device name (or /dev/xvdf) as a symlink, but that can take a few
+# seconds to appear after the attachment lands.
+DATA_MOUNT="/mnt/ado-data"
+DATA_DEVICE=""
+for candidate in ${data_device_name} /dev/xvdf; do
+  for i in $(seq 1 30); do
+    if [ -e "$candidate" ]; then
+      DATA_DEVICE="$candidate"
+      break 2
+    fi
+    sleep 2
+  done
+done
+
+if [ -z "$DATA_DEVICE" ]; then
+  echo "ERROR: data volume device never appeared - is aws_volume_attachment.data attached to this instance?" >&2
+  exit 1
+fi
+
+# Only format if the device has no existing filesystem - keeps this safe to
+# re-run and avoids wiping data on an already-provisioned volume.
+if ! blkid "$DATA_DEVICE" >/dev/null 2>&1; then
+  mkfs.ext4 "$DATA_DEVICE"
+fi
+
+mkdir -p "$DATA_MOUNT"
+if ! mountpoint -q "$DATA_MOUNT"; then
+  mount "$DATA_DEVICE" "$DATA_MOUNT"
+fi
+
+# Persist across reboots - nofail so a slow/missing attachment never blocks boot.
+DATA_UUID=$(blkid -s UUID -o value "$DATA_DEVICE")
+if ! grep -q "$DATA_UUID" /etc/fstab; then
+  echo "UUID=$DATA_UUID $DATA_MOUNT ext4 defaults,nofail 0 2" >> /etc/fstab
+fi
+
+mkdir -p "$DATA_MOUNT/azagent" "$DATA_MOUNT/tfvars"
+chown -R "ubuntu:ubuntu" "$DATA_MOUNT"
+
+# Point the agent's working directory and tfvars dir at the data volume. Run
+# this document BEFORE configure_agent on a fresh instance so azagent doesn't
+# exist yet. If either path already exists as a real directory (e.g. tfvars,
+# created by userdata.sh, or azagent from a prior configure_agent run before
+# this volume existed), migrate its contents onto the data volume first so
+# nothing already there is lost or hidden underneath the new mount.
+for path in azagent tfvars; do
+  target="/home/ubuntu/$path"
+  dest="$DATA_MOUNT/$path"
+  if [ -d "$target" ] && [ ! -L "$target" ]; then
+    shopt -s dotglob nullglob
+    mv "$target"/* "$dest"/ 2>/dev/null || true
+    shopt -u dotglob nullglob
+    rmdir "$target" 2>/dev/null || rm -rf "$target"
+  fi
+  if [ ! -e "$target" ]; then
+    ln -sfn "$dest" "$target"
+  fi
+  chown -h "ubuntu:ubuntu" "$target"
+done
+
+echo "Data volume mounted at $DATA_MOUNT ($DATA_DEVICE, UUID=$DATA_UUID)"

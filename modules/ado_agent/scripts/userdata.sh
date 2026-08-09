@@ -34,6 +34,11 @@ python3 --version
 # aws_ssm_document.configure_agent + configure-agent.sh.tftpl). It's invoked
 # with `aws ssm send-command` after boot, not baked into user_data - this lets
 # the agent be (re)configured without replacing the instance.
+#
+# Likewise, the data volume (git checkouts, tfvars) is formatted/mounted via
+# the "mount_data_volume" SSM Document (aws_ssm_document.mount_data_volume +
+# mount-data-volume.sh.tftpl), not here, so it can be (re)run on demand
+# without replacing the instance.
 
 # Create a directory for tfvars files and set ownership to the Azure Pipelines agent user
 mkdir -p "/home/ubuntu/tfvars"
