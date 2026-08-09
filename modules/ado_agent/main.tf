@@ -55,28 +55,37 @@ data "aws_iam_policy_document" "assume_role" {
   }
 }
 
-# IAM Policy for S3 Access
+# IAM Policy for Azure DevOps self-hosted agent.
 resource "aws_iam_policy" "this" {
-  name        = "${var.name}-policy"
-  description = "Allow S3 access for ADO Agent"
+  name        = "${var.name}-pipeline-policy"
+  description = "IAM permissions for Azure DevOps self-hosted agent"
 
   policy = jsonencode({
-    Version = "2012-10-17",
+    Version = "2012-10-17"
+
     Statement = [
       {
-        Effect = "Allow",
+        Effect = "Allow"
+
         Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
-        ],
-        Resource = [
-          "arn:aws:s3:::df-iac-tfstate",
-          "arn:aws:s3:::df-iac-tfstate/*",
-          "arn:aws:s3:::df-iac-tfvars",
-          "arn:aws:s3:::df-iac-tfvars/*"
+          "ec2:*",
+          "lambda:*",
+          "iam:*",
+          "s3:*",
+          "dynamodb:*",
+          "sqs:*",
+          "events:*",
+          "logs:*",
+          "ssm:*",
+          "cloudwatch:*",
+          "sns:*",
+          "ses:*",
+          "acm:*",
+          "cloudfront:*",
+          "route53:*"
         ]
+
+        Resource = "*"
       }
     ]
   })
@@ -100,7 +109,7 @@ resource "aws_iam_role_policy_attachment" "s3" {
 # Lets configure-agent.sh.tftpl (run via aws_ssm_document.configure_agent) fetch the
 # Azure DevOps PAT from SSM Parameter Store instead of embedding it in plaintext.
 resource "aws_iam_policy" "ado_pat" {
-  name        = "${var.name}-ado-pat-ssm-policy"
+  name        = "${var.name}-ssm-policy"
   description = "Allow reading the Azure DevOps PAT SecureString parameter for unattended agent registration"
 
   policy = jsonencode({
