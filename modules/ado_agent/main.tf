@@ -153,6 +153,7 @@ resource "aws_instance" "this" {
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.this.id]
   iam_instance_profile   = aws_iam_instance_profile.this.name
+  key_name               = var.key_pair_name
   user_data              = file("${path.module}/scripts/userdata.sh")
   # cloud-init only runs user_data once per instance ID - without this, editing
   # userdata.sh has no effect on an already-running instance (confirmed: AWS
@@ -184,6 +185,12 @@ resource "aws_volume_attachment" "data" {
   device_name = var.data_volume_device_name
   volume_id   = aws_ebs_volume.data.id
   instance_id = aws_instance.this.id
+
+  # The agent service runs out of a directory symlinked onto this volume
+  # (see mount-data-volume.sh), so the guest OS never releases it cleanly on
+  # its own - detaching while the instance is running gets stuck "busy".
+  # Stopping the instance first forces a clean shutdown/unmount instead.
+  stop_instance_before_detaching = true
 }
 
 # ---- SSM Documents ----

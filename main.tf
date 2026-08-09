@@ -28,6 +28,7 @@ module "ado_agent" {
   name           = local.ec2.name
   ami_id         = local.ec2.ami_id
   instance_type  = local.ec2.instance_type
+  key_pair_name  = local.ec2.key_pair_name
   subnet_id      = module.vpc.public_subnet_ids[0]
   security_group = local.ec2.security_group
   vpc_id         = module.vpc.vpc_id

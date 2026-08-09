@@ -43,6 +43,12 @@ variable "ado_pat" {
   sensitive   = true
 }
 
+variable "key_pair_name" {
+  description = "Name of an existing AWS EC2 key pair for SSH break-glass access, in case SSM Agent is unavailable. Leave null to launch without one (SSM-only access)."
+  type        = string
+  default     = null
+}
+
 variable "azp_url" {
   description = "Azure DevOps organization URL used by configure-agent.sh.tftpl to register the self-hosted agent (e.g. https://dev.azure.com/<org>)."
   type        = string
