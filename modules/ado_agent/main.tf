@@ -97,7 +97,7 @@ resource "aws_iam_role_policy_attachment" "s3" {
 # Lets configure-agent.sh.tftpl (run via aws_ssm_document.configure_agent) fetch the
 # Azure DevOps PAT from SSM Parameter Store instead of embedding it in plaintext.
 resource "aws_iam_policy" "ado_pat" {
-  name        = "${var.name}-ado-pat-policy"
+  name        = "${var.name}-ado-pat-ssm-policy"
   description = "Allow reading the Azure DevOps PAT SecureString parameter for unattended agent registration"
 
   policy = jsonencode({
@@ -147,7 +147,7 @@ resource "aws_ssm_document" "configure_agent" {
             azp_pool               = var.azp_pool
             azp_agent_name         = var.azp_agent_name
             ado_pat_parameter_name = var.ado_pat_ssm_parameter_name
-            aws_region             = var.aws_region
+            aws_region             = data.aws_region.current.region
           })
         ]
       }

@@ -1,9 +1,3 @@
-variable "aws_region" {
-  description = "AWS region for regional resources."
-  type        = string
-  default     = "ap-southeast-1"
-}
-
 variable "name" {
   description = "Name used for the EC2 instance and related resources (security group, IAM role/profile)."
   type        = string
