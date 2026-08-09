@@ -27,3 +27,8 @@ output "ado_agent_configure_document_name" {
   description = "Run: aws ssm send-command --document-name <this> --instance-ids <ado_agent_instance_id> --region ap-southeast-1"
   value       = module.ado_agent.configure_agent_document_name
 }
+
+output "ado_agent_mount_data_volume_document_name" {
+  description = "Run before ado_agent_configure_document_name on a fresh instance: aws ssm send-command --document-name <this> --instance-ids <ado_agent_instance_id> --region ap-southeast-1"
+  value       = module.ado_agent.mount_data_volume_document_name
+}
