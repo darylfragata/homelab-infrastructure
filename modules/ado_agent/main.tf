@@ -82,7 +82,8 @@ resource "aws_iam_policy" "this" {
           "ses:*",
           "acm:*",
           "cloudfront:*",
-          "route53:*"
+          "route53:*",
+          "budgets:*"
         ]
 
         Resource = "*"
@@ -122,7 +123,7 @@ resource "aws_iam_policy" "ado_pat" {
       },
       {
         Effect   = "Allow",
-        Action   = ["kms:Decrypt"],
+        Action   = ["kms:Decrypt", "kms:ListAliases"],
         Resource = data.aws_kms_alias.ssm.target_key_arn
       }
     ]
