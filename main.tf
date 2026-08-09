@@ -13,6 +13,8 @@ module "vpc" {
 }
 
 module "budget" {
+  count = var.environment == "prod" ? 0 : 1
+
   source = "./modules/budget"
 
   budget_alert_email = local.budget.budget_alert_email
@@ -23,6 +25,8 @@ module "budget" {
 }
 
 module "ado_agent" {
+  count = var.environment == "prod" ? 0 : 1
+
   source = "./modules/ado_agent"
 
   name           = local.ec2.name
