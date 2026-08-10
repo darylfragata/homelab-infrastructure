@@ -21,7 +21,7 @@ stages:
   - deployment: ApplyShared
     displayName: 'Apply (shared)'
     dependsOn: PlanShared
-    environment: shared-apply   # ADO Environment - approval gate configured in Library UI, not here
+    environment: shared   # ADO Environment - approval gate configured in Library UI, not here
     strategy:
       runOnce:
         deploy:
