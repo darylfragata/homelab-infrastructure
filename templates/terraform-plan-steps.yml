@@ -1,8 +1,6 @@
 parameters:
 - name: environment      # 'dev' or 'prod'
   type: string
-- name: backendConfig    # 'backend/dev.hcl' or 'backend/prod.hcl'
-  type: string
 - name: tfvarsUri        # s3://df-iac-tfvars/... path to this environment's .tfvars file
   type: string
 
@@ -12,14 +10,18 @@ steps:
 - script: aws s3 cp ${{ parameters.tfvarsUri }} /home/ubuntu/tfvars/${{ parameters.environment }}.tfvars
   displayName: 'Fetch tfvars (${{ parameters.environment }})'
 
-- script: terraform init -backend-config=${{ parameters.backendConfig }} -reconfigure
+- script: terraform init -reconfigure
   displayName: 'Terraform Init (${{ parameters.environment }})'
+  workingDirectory: envs/${{ parameters.environment }}
 
 - script: terraform validate
   displayName: 'Terraform Validate (${{ parameters.environment }})'
+  workingDirectory: envs/${{ parameters.environment }}
 
 - script: terraform plan -var-file=/home/ubuntu/tfvars/${{ parameters.environment }}.tfvars -out=tfplan
   displayName: 'Terraform Plan (${{ parameters.environment }})'
+  workingDirectory: envs/${{ parameters.environment }}
 
-- script: terraform apply -auto-approve tfplan
-  displayName: 'Terraform Apply (${{ parameters.environment }})'
+- publish: $(System.DefaultWorkingDirectory)/envs/${{ parameters.environment }}/tfplan
+  artifact: tfplan-${{ parameters.environment }}
+  displayName: 'Publish plan (${{ parameters.environment }})'

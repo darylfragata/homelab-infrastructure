@@ -10,29 +10,18 @@ variable "aws_region" {
 }
 
 variable "vpc_cidr_block" {
-  description = "VPC CIDR block used only when enable_vpc is true."
+  description = "VPC CIDR block."
   type        = string
 }
 
 variable "private_subnet_cidrs" {
-  description = "Private subnet CIDR blocks used only when enable_vpc is true."
+  description = "Private subnet CIDR blocks."
   type        = list(string)
 }
 
 variable "public_subnet_cidrs" {
-  description = "Public subnet CIDR blocks used only when enable_vpc is true."
+  description = "Public subnet CIDR blocks."
   type        = list(string)
-}
-
-variable "environment" {
-  description = "Deployment environment name."
-  type        = string
-  default     = "dev"
-
-  validation {
-    condition     = contains(["dev", "prod"], var.environment)
-    error_message = "Environment must be dev or prod."
-  }
 }
 
 variable "budget_alert_email" {

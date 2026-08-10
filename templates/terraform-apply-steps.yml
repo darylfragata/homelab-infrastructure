@@ -1,0 +1,22 @@
+parameters:
+- name: environment      # 'dev' or 'prod'
+  type: string
+
+steps:
+- checkout: self
+
+- script: terraform init -reconfigure
+  displayName: 'Terraform Init (${{ parameters.environment }})'
+  workingDirectory: envs/${{ parameters.environment }}
+
+- download: current
+  artifact: tfplan-${{ parameters.environment }}
+  displayName: 'Download plan (${{ parameters.environment }})'
+
+- script: cp "$(Pipeline.Workspace)/tfplan-${{ parameters.environment }}/tfplan" ./tfplan
+  displayName: 'Stage plan file (${{ parameters.environment }})'
+  workingDirectory: envs/${{ parameters.environment }}
+
+- script: terraform apply -auto-approve tfplan
+  displayName: 'Terraform Apply (${{ parameters.environment }})'
+  workingDirectory: envs/${{ parameters.environment }}
