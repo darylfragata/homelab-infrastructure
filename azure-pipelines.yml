@@ -23,7 +23,7 @@ stages:
   - deployment: ApplyDev
     displayName: 'Apply (dev)'
     dependsOn: PlanDev
-    environment: dev-apply   # ADO Environment - approval gate configured in Library UI, not here
+    environment: dev-deployment   # ADO Environment - approval gate configured in Library UI, not here
     strategy:
       runOnce:
         deploy:
@@ -50,7 +50,7 @@ stages:
   - deployment: ApplyProd
     displayName: 'Apply (prod)'
     dependsOn: PlanProd
-    environment: prod   # ADO Environment - approval gate configured in Library UI, not here
+    environment: prod-deployment  # ADO Environment - approval gate configured in Library UI, not here
     strategy:
       runOnce:
         deploy:
