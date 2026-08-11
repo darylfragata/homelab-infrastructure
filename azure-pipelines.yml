@@ -36,6 +36,7 @@ stages:
 
   - stage: Prod
     displayName: "Terraform - Prod"
+    dependsOn: [] # explicitly empty - stages implicitly depend on the previous one if this is omitted
     jobs:
       - job: ProdPlan
         displayName: "Plan (prod)"
