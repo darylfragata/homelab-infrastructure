@@ -40,7 +40,7 @@ stages:
 
   - stage: ProdPlan
     displayName: "Plan (prod)"
-    dependsOn: DevPlan # waits only on Dev's plan, not Dev's apply/approval
+    dependsOn: [] # explicit - fully independent, no dependency on Dev at all
     jobs:
       - job: ProdPlan
         displayName: "Plan (prod)"
