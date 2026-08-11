@@ -40,7 +40,7 @@ stages:
 
   - stage: PlanProd
     displayName: "Plan (prod)"
-    dependsOn: ApplyDev
+    dependsOn: PlanDev
     condition: succeeded()
     jobs:
       - job: PlanProd
