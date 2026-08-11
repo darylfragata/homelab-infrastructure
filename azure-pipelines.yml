@@ -1,60 +1,64 @@
 trigger:
   branches:
     include:
-    - release/*
+      - release/*
 
 pool:
-  name: AWS-Agents   # self-hosted agent pool (matches azp_pool in tfvars)
+  name: AWS-Agents # self-hosted agent pool (matches azp_pool in tfvars)
 
 stages:
-- stage: Dev
-  displayName: 'Terraform - Dev'
-  jobs:
-  - job: PlanDev
-    displayName: 'Plan (dev)'
-    variables:
-    - group: dev
-    steps:
-    - template: templates/terraform-plan-steps.yml
-      parameters:
-        environment: dev
-        tfvarsUri: $(tfvarsUriDev)
-
-  - deployment: ApplyDev
-    displayName: 'Apply (dev)'
-    dependsOn: PlanDev
-    environment: dev-deployment   # ADO Environment - approval gate configured in Library UI, not here
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - template: templates/terraform-apply-steps.yml
+  - stage: Dev
+    displayName: "Terraform - Dev"
+    jobs:
+      - job: PlanDev
+        displayName: "Plan (dev)"
+        variables:
+          - group: dev # ADO Library variable group - supplies infra_env and tfvarsUri
+        steps:
+          - template: templates/terraform-plan-steps.yml
             parameters:
-              environment: dev
+              envDir: $(infra_env) # from ADO Library variable group
+              tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
-- stage: Prod
-  displayName: 'Terraform - Prod'
-  dependsOn: Dev
-  condition: succeeded()
-  jobs:
-  - job: PlanProd
-    displayName: 'Plan (prod)'
-    variables:
-    - group: prod
-    steps:
-    - template: templates/terraform-plan-steps.yml
-      parameters:
-        environment: prod
-        tfvarsUri: $(tfvarsUriProd)
+      - deployment: ApplyDev
+        displayName: "Apply (dev)"
+        variables:
+          - group: dev # ADO Library variable group - supplies infra_env
+        dependsOn: PlanDev
+        environment: dev-deployment # ADO Environment - approval gate configured in Library UI, not here
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-apply-steps.yml
+                  parameters:
+                    envDir: $(infra_env) # from ADO Library variable group
 
-  - deployment: ApplyProd
-    displayName: 'Apply (prod)'
-    dependsOn: PlanProd
-    environment: prod-deployment  # ADO Environment - approval gate configured in Library UI, not here
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - template: templates/terraform-apply-steps.yml
+  - stage: Prod
+    displayName: "Terraform - Prod"
+    dependsOn: Dev
+    condition: succeeded()
+    jobs:
+      - job: PlanProd
+        displayName: "Plan (prod)"
+        variables:
+          - group: prod # ADO Library variable group - supplies infra_env and tfvarsUri
+        steps:
+          - template: templates/terraform-plan-steps.yml
             parameters:
-              environment: prod
+              envDir: $(infra_env) # from ADO Library variable group
+              tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
+
+      - deployment: ApplyProd
+        displayName: "Apply (prod)"
+        variables:
+          - group: prod # ADO Library variable group - supplies infra_env
+        dependsOn: PlanProd
+        environment: prod-deployment # ADO Environment - approval gate configured in Library UI, not here
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-apply-steps.yml
+                  parameters:
+                    envDir: $(infra_env) # from ADO Library variable group
