@@ -7,8 +7,8 @@ pool:
   name: AWS-Agents # self-hosted agent pool (matches azp_pool in tfvars)
 
 stages:
-  - stage: PlanDev
-    displayName: "Plan (dev)"
+  - stage: Dev
+    displayName: "Terraform - Dev"
     jobs:
       - job: PlanDev
         displayName: "Plan (dev)"
@@ -20,15 +20,11 @@ stages:
               envDir: $(infra_env) # from ADO Library variable group
               tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
-  - stage: ApplyDev
-    displayName: "Apply (dev)"
-    dependsOn: PlanDev
-    condition: succeeded()
-    jobs:
       - deployment: ApplyDev
         displayName: "Apply (dev)"
         variables:
           - group: dev # ADO Library variable group - supplies infra_env
+        dependsOn: PlanDev
         environment: dev-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
@@ -38,9 +34,9 @@ stages:
                   parameters:
                     envDir: $(infra_env) # from ADO Library variable group
 
-  - stage: PlanProd
-    displayName: "Plan (prod)"
-    dependsOn: ApplyDev
+  - stage: Prod
+    displayName: "Terraform - Prod"
+    dependsOn: Dev
     condition: succeeded()
     jobs:
       - job: PlanProd
@@ -53,15 +49,11 @@ stages:
               envDir: $(infra_env) # from ADO Library variable group
               tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
-  - stage: ApplyProd
-    displayName: "Apply (prod)"
-    dependsOn: PlanProd
-    condition: succeeded()
-    jobs:
       - deployment: ApplyProd
         displayName: "Apply (prod)"
         variables:
           - group: prod # ADO Library variable group - supplies infra_env
+        dependsOn: PlanProd
         environment: prod-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
