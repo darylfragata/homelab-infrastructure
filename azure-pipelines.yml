@@ -1,13 +1,3 @@
-parameters:
-  - name: runDev
-    displayName: "Run Dev stage"
-    type: boolean
-    default: true
-  - name: runProd
-    displayName: "Run Prod stage"
-    type: boolean
-    default: true
-
 trigger:
   branches:
     include:
@@ -19,7 +9,6 @@ pool:
 stages:
   - stage: Dev
     displayName: "Terraform - Dev"
-    condition: ${{ eq(parameters.runDev, true) }}
     jobs:
       - job: DevPlan
         displayName: "Plan (dev)"
@@ -47,7 +36,6 @@ stages:
 
   - stage: Prod
     displayName: "Terraform - Prod"
-    condition: ${{ eq(parameters.runProd, true) }}
     jobs:
       - job: ProdPlan
         displayName: "Plan (prod)"
