@@ -21,7 +21,7 @@ stages:
     displayName: "Terraform - Dev"
     condition: ${{ eq(parameters.runDev, true) }}
     jobs:
-      - job: PlanDev
+      - job: DevPlan
         displayName: "Plan (dev)"
         variables:
           - group: dev # ADO Library variable group - supplies infra_env and tfvarsUri
@@ -31,11 +31,11 @@ stages:
               envDir: $(infra_env) # from ADO Library variable group
               tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
-      - deployment: ApplyDev
+      - deployment: DevApply
         displayName: "Apply (dev)"
         variables:
           - group: dev # ADO Library variable group - supplies infra_env
-        dependsOn: PlanDev
+        dependsOn: DevPlan
         environment: dev-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
@@ -49,7 +49,7 @@ stages:
     displayName: "Terraform - Prod"
     condition: ${{ eq(parameters.runProd, true) }}
     jobs:
-      - job: PlanProd
+      - job: ProdPlan
         displayName: "Plan (prod)"
         variables:
           - group: prod # ADO Library variable group - supplies infra_env and tfvarsUri
@@ -59,11 +59,11 @@ stages:
               envDir: $(infra_env) # from ADO Library variable group
               tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
-      - deployment: ApplyProd
+      - deployment: ProdApply
         displayName: "Apply (prod)"
         variables:
           - group: prod # ADO Library variable group - supplies infra_env
-        dependsOn: PlanProd
+        dependsOn: ProdPlan
         environment: prod-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
