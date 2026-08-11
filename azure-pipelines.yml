@@ -7,8 +7,9 @@ pool:
   name: AWS-Agents # self-hosted agent pool (matches azp_pool in tfvars)
 
 stages:
-  - stage: Dev
-    displayName: "Terraform - Dev"
+  - stage: DevPlan
+    displayName: "Plan (dev)"
+    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
     jobs:
       - job: DevPlan
         displayName: "Plan (dev)"
@@ -20,11 +21,14 @@ stages:
               envDir: $(infra_env) # from ADO Library variable group
               tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
+  - stage: DevApply
+    displayName: "Apply (dev)"
+    dependsOn: DevPlan
+    jobs:
       - deployment: DevApply
         displayName: "Apply (dev)"
         variables:
           - group: dev # ADO Library variable group - supplies infra_env
-        dependsOn: DevPlan
         environment: dev-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
@@ -34,9 +38,9 @@ stages:
                   parameters:
                     envDir: $(infra_env) # from ADO Library variable group
 
-  - stage: Prod
-    displayName: "Terraform - Prod"
-    dependsOn: [] # explicitly empty - stages implicitly depend on the previous one if this is omitted
+  - stage: ProdPlan
+    displayName: "Plan (prod)"
+    dependsOn: DevPlan # waits only on Dev's plan, not Dev's apply/approval
     jobs:
       - job: ProdPlan
         displayName: "Plan (prod)"
@@ -48,11 +52,14 @@ stages:
               envDir: $(infra_env) # from ADO Library variable group
               tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
+  - stage: ProdApply
+    displayName: "Apply (prod)"
+    dependsOn: ProdPlan
+    jobs:
       - deployment: ProdApply
         displayName: "Apply (prod)"
         variables:
           - group: prod # ADO Library variable group - supplies infra_env
-        dependsOn: ProdPlan
         environment: prod-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
