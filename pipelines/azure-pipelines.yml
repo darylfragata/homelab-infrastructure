@@ -16,10 +16,9 @@ stages:
         variables:
           - group: dev # ADO Library variable group - supplies infra_env and tfvarsUri
         steps:
-          - template: templates/terraform-plan-steps.yml
+          - template: /templates/terraform-plan-steps.yml
             parameters:
               envDir: $(infra_env) # from ADO Library variable group
-              tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
   - stage: DevApply
     displayName: "Apply (dev)"
@@ -34,7 +33,7 @@ stages:
           runOnce:
             deploy:
               steps:
-                - template: templates/terraform-apply-steps.yml
+                - template: /templates/terraform-apply-steps.yml
                   parameters:
                     envDir: $(infra_env) # from ADO Library variable group
 
@@ -47,10 +46,9 @@ stages:
         variables:
           - group: prod # ADO Library variable group - supplies infra_env and tfvarsUri
         steps:
-          - template: templates/terraform-plan-steps.yml
+          - template: /templates/terraform-plan-steps.yml
             parameters:
               envDir: $(infra_env) # from ADO Library variable group
-              tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
   - stage: ProdApply
     displayName: "Apply (prod)"
@@ -65,6 +63,6 @@ stages:
           runOnce:
             deploy:
               steps:
-                - template: templates/terraform-apply-steps.yml
+                - template: /templates/terraform-apply-steps.yml
                   parameters:
                     envDir: $(infra_env) # from ADO Library variable group
