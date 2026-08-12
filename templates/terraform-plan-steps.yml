@@ -1,0 +1,27 @@
+parameters:
+- name: envDir      # directory for the environment's Terraform configuration
+  type: string
+- name: tfvarsS3Uri        # s3://df-iac-tfvars/... path to this environment's .tfvars file
+  type: string
+
+steps:
+- checkout: self
+
+- script: aws s3 cp ${{ parameters.tfvarsS3Uri }} /home/ubuntu/tfvars/${{ parameters.envDir }}.tfvars
+  displayName: 'Fetch tfvars (${{ parameters.envDir }})'
+
+- script: terraform init -reconfigure
+  displayName: 'Terraform Init (${{ parameters.envDir }})'
+  workingDirectory: envs/${{ parameters.envDir }}
+
+- script: terraform validate
+  displayName: 'Terraform Validate (${{ parameters.envDir }})'
+  workingDirectory: envs/${{ parameters.envDir }}
+
+- script: terraform plan -var-file=/home/ubuntu/tfvars/${{ parameters.envDir }}.tfvars -out=tfplan
+  displayName: 'Terraform Plan (${{ parameters.envDir }})'
+  workingDirectory: envs/${{ parameters.envDir }}
+
+- publish: $(System.DefaultWorkingDirectory)/envs/${{ parameters.envDir }}/tfplan
+  artifact: tfplan-${{ parameters.envDir }}
+  displayName: 'Publish plan (${{ parameters.envDir }})'
