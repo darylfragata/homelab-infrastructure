@@ -7,31 +7,15 @@ pool:
   name: AWS-Agents # self-hosted agent pool (matches azp_pool in tfvars)
 
 stages:
-  - stage: Build
-    displayName: "Build (lambda)"
-    dependsOn: [] # explicit - no dependency, runs first automatically
-    jobs:
-      - job: BuildLambda
-        displayName: "Build Lambda artifact"
-        steps:
-          - script: echo "placeholder - would package Lambda code into lambda-artifact.zip"
-            displayName: "Package Lambda artifact [placeholder]"
-
-          - script: echo "placeholder - would upload lambda-artifact.zip to S3"
-            displayName: "Upload artifact to S3 [placeholder]"
-
   - stage: DevPlan
     displayName: "Plan (dev)"
-    dependsOn: Build # placeholder - Dev now waits on the Lambda artifact being built/uploaded first
+    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
     jobs:
       - job: DevPlan
         displayName: "Plan (dev)"
         variables:
           - group: dev # ADO Library variable group - supplies infra_env and tfvarsUri
         steps:
-          - script: echo "would reference Lambda artifact at s3://REPLACE-ME-lambda-artifacts-bucket/lambda/$(Build.BuildId)/lambda-artifact.zip [placeholder]"
-            displayName: "Use Lambda artifact [placeholder]"
-
           - template: templates/terraform-plan-steps.yml
             parameters:
               envDir: $(infra_env) # from ADO Library variable group
@@ -54,38 +38,15 @@ stages:
                   parameters:
                     envDir: $(infra_env) # from ADO Library variable group
 
-  - stage: QaPlan
-    displayName: "Plan (qa)"
-    dependsOn: Build # placeholder - same pattern as Dev/Prod, parallel branch off Build
-    jobs:
-      - job: QaPlan
-        displayName: "Plan (qa)"
-        steps:
-          - script: echo "placeholder - QA plan"
-            displayName: "Plan (qa) [placeholder]"
-
-  - stage: QaApply
-    displayName: "Apply (qa)"
-    dependsOn: QaPlan
-    jobs:
-      - job: QaApply
-        displayName: "Apply (qa)"
-        steps:
-          - script: echo "placeholder - QA apply"
-            displayName: "Apply (qa) [placeholder]"
-
   - stage: ProdPlan
     displayName: "Plan (prod)"
-    dependsOn: Build # placeholder - Prod now waits on the Lambda artifact being built/uploaded first (still independent of Dev)
+    dependsOn: [] # explicit - fully independent, no dependency on Dev at all
     jobs:
       - job: ProdPlan
         displayName: "Plan (prod)"
         variables:
           - group: prod # ADO Library variable group - supplies infra_env and tfvarsUri
         steps:
-          - script: echo "would reference Lambda artifact at s3://REPLACE-ME-lambda-artifacts-bucket/lambda/$(Build.BuildId)/lambda-artifact.zip [placeholder]"
-            displayName: "Use Lambda artifact [placeholder]"
-
           - template: templates/terraform-plan-steps.yml
             parameters:
               envDir: $(infra_env) # from ADO Library variable group
