@@ -54,6 +54,26 @@ stages:
                   parameters:
                     envDir: $(infra_env) # from ADO Library variable group
 
+  - stage: QaPlan
+    displayName: "Plan (qa)"
+    dependsOn: Build # placeholder - same pattern as Dev/Prod, parallel branch off Build
+    jobs:
+      - job: QaPlan
+        displayName: "Plan (qa)"
+        steps:
+          - script: echo "placeholder - QA plan"
+            displayName: "Plan (qa) [placeholder]"
+
+  - stage: QaApply
+    displayName: "Apply (qa)"
+    dependsOn: QaPlan
+    jobs:
+      - job: QaApply
+        displayName: "Apply (qa)"
+        steps:
+          - script: echo "placeholder - QA apply"
+            displayName: "Apply (qa) [placeholder]"
+
   - stage: ProdPlan
     displayName: "Plan (prod)"
     dependsOn: Build # placeholder - Prod now waits on the Lambda artifact being built/uploaded first (still independent of Dev)
