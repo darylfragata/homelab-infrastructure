@@ -1,7 +1,5 @@
-trigger:
-  branches:
-    include:
-      - release/*
+trigger: none
+pr: none
 
 pool:
   name: AWS-Agents # self-hosted agent pool
