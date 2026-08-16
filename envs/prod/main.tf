@@ -7,3 +7,11 @@ module "vpc" {
   public_subnet_cidrs  = var.public_subnet_cidrs
   project_name         = var.project_name
 }
+
+module "static_site" {
+  source = "../../modules/static_site"
+
+  bucket_name  = local.static_site.bucket_name
+  environment  = var.environment
+  project_name = var.project_name
+}
