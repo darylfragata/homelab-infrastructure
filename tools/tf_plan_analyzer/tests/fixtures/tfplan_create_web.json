@@ -1,0 +1,71 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.7.5",
+  "resource_changes": [
+    {
+      "address": "module.s3.aws_s3_bucket.site",
+      "mode": "managed",
+      "type": "aws_s3_bucket",
+      "name": "site",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "bucket": "portfolio-web-dev-site",
+          "tags": { "Name": "portfolio-web-dev-site" }
+        },
+        "after_unknown": { "id": true, "arn": true }
+      }
+    },
+    {
+      "address": "module.s3.aws_s3_bucket_versioning.site",
+      "mode": "managed",
+      "type": "aws_s3_bucket_versioning",
+      "name": "site",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "bucket": "portfolio-web-dev-site",
+          "versioning_configuration": [{ "status": "Enabled" }]
+        },
+        "after_unknown": { "id": true }
+      }
+    },
+    {
+      "address": "module.cloudfront.aws_cloudfront_distribution.site",
+      "mode": "managed",
+      "type": "aws_cloudfront_distribution",
+      "name": "site",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "enabled": true,
+          "default_root_object": "index.html"
+        },
+        "after_unknown": { "id": true, "arn": true, "domain_name": true }
+      }
+    },
+    {
+      "address": "module.budget.aws_budgets_budget.monthly",
+      "mode": "managed",
+      "type": "aws_budgets_budget",
+      "name": "monthly",
+      "provider_name": "registry.terraform.io/hashicorp/aws",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "budget_type": "COST",
+          "limit_amount": "50",
+          "limit_unit": "USD"
+        },
+        "after_unknown": { "id": true }
+      }
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+trigger: none
+pr: none
+
+pool:
+  name: AWS-Agents # self-hosted agent pool
+
+stages:
+  - stage: DevBucketSync
+    displayName: "Sync tfvars (dev)"
+    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
+    jobs:
+      - deployment: DevBucketSync
+        displayName: "Sync tfvars (dev) to agent"
+        variables:
+          - group: dev # ADO Library variable group - supplies infra_env and tfvarsUri
+        environment: dev-deployment # ADO Environment - approval gate configured in Library UI, not here
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: /templates/tfvars-sync.yml
+                  parameters:
+                    envDir: $(infra_env) # from ADO Library variable group
+                    tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
+
+  - stage: ProdBucketSync
+    displayName: "Sync tfvars (prod)"
+    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
+    jobs:
+      - deployment: ProdBucketSync
+        displayName: "Sync tfvars (prod) to agent"
+        variables:
+          - group: prod # ADO Library variable group - supplies infra_env and tfvarsUri
+        environment: prod-deployment # ADO Environment - approval gate configured in Library UI, not here
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: /templates/tfvars-sync.yml
+                  parameters:
+                    envDir: $(infra_env) # from ADO Library variable group
+                    tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
+
+  - stage: SharedBucketSync
+    displayName: "Sync tfvars (shared)"
+    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
+    jobs:
+      - deployment: SharedBucketSync
+        displayName: "Sync tfvars (shared) to agent"
+        variables:
+          - group: shared # ADO Library variable group - supplies infra_env and tfvarsUri
+        environment: shared-deployment # ADO Environment - approval gate configured in Library UI, not here
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: /templates/tfvars-sync.yml
+                  parameters:
+                    envDir: $(infra_env) # from ADO Library variable group
+                    tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group

@@ -1,31 +1,21 @@
-terraform {
-  backend "s3" {
-    bucket       = "df-iac-tfstate"
-    key          = "infra/shared/infrastructure.tfstate"
-    region       = "ap-southeast-1"
-    encrypt      = true
-    use_lockfile = true
-  }
-}
-
 module "vpc" {
   source = "../../modules/vpc"
 
-  cidr_block           = local.vpc.cidr_block
-  environment          = local.environment
-  private_subnet_cidrs = local.vpc.private_subnet_cidrs
-  public_subnet_cidrs  = local.vpc.public_subnet_cidrs
-  project_name         = local.vpc.project_name
+  cidr_block           = var.vpc_cidr_block
+  environment          = var.environment
+  private_subnet_cidrs = var.private_subnet_cidrs
+  public_subnet_cidrs  = var.public_subnet_cidrs
+  project_name         = var.project_name
 }
 
 module "budget" {
   source = "../../modules/budget"
 
-  budget_alert_email = local.budget.budget_alert_email
-  budget_limit_usd   = local.budget.budget_limit_usd
-  enable_budget      = local.budget.enable_budget
-  environment        = local.environment
-  project_name       = local.budget.project_name
+  budget_alert_email = var.budget_alert_email
+  budget_limit_usd   = var.budget_limit_usd
+  enable_budget      = var.enable_budget
+  environment        = var.environment
+  project_name       = var.project_name
 }
 
 module "ado_agent" {

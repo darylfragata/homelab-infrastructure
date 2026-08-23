@@ -8,22 +8,6 @@ data "aws_ami_ids" "ubuntu" {
 }
 
 locals {
-  environment = "shared"
-
-  vpc = {
-    cidr_block           = var.vpc_cidr_block
-    private_subnet_cidrs = var.private_subnet_cidrs
-    public_subnet_cidrs  = var.public_subnet_cidrs
-    project_name         = var.project_name
-  }
-
-  budget = {
-    budget_alert_email = var.budget_alert_email
-    budget_limit_usd   = var.budget_limit_usd
-    enable_budget      = var.enable_budget
-    project_name       = var.project_name
-  }
-
   ec2 = {
     name          = "ado-cicd-agent"
     ami_id        = data.aws_ami_ids.ubuntu.ids[0]
