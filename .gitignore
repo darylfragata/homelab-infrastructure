@@ -44,3 +44,9 @@ terraform.rc
 # planout
 
 .terraform.lock.hcl
+
+# Locally-derived skill pointer, sourced from .agents/skills/ (tracked via
+# skills-lock.json) - not committed since a symlink here doesn't survive
+# OneDrive sync or a folder move reliably (see homelab-documentation's
+# LAB-JOURNAL.md for the stale-symlink incident this caused).
+.claude/skills/
