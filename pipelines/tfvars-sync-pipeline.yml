@@ -13,23 +13,44 @@ stages:
         steps:
           - script: |
               set -e
-              NEW_CHECKSUM=$(aws s3api list-objects-v2 --bucket df-iac-tfvars --query "Contents[].[Key,ETag]" --output text | sort | sha256sum | awk '{print $1}')
-              CHECKSUM_FILE=/home/ubuntu/tfvars/.bucket-checksum
-              OLD_CHECKSUM=""
-              if [ -f "$CHECKSUM_FILE" ]; then
-                OLD_CHECKSUM=$(cat "$CHECKSUM_FILE")
-              fi
-              echo "Stored checksum: ${OLD_CHECKSUM:-<none>}"
-              echo "Bucket checksum: $NEW_CHECKSUM"
-              if [ "$NEW_CHECKSUM" != "$OLD_CHECKSUM" ]; then
-                echo "tfvars bucket has changed since the last sync."
+              mkdir -p /home/ubuntu/tfvars
+              MANIFEST_FILE=/home/ubuntu/tfvars/.bucket-manifest
+              touch "$MANIFEST_FILE"
+
+              aws s3api list-objects-v2 --bucket df-iac-tfvars --query "Contents[].[Key,ETag]" --output text | sort > /tmp/new-manifest.txt
+              cp "$MANIFEST_FILE" /tmp/old-manifest.txt
+
+              declare -A OLD_ETAG NEW_ETAG
+              while read -r key etag; do [ -n "$key" ] && OLD_ETAG["$key"]="$etag"; done < /tmp/old-manifest.txt
+              while read -r key etag; do [ -n "$key" ] && NEW_ETAG["$key"]="$etag"; done < /tmp/new-manifest.txt
+
+              HAS_CHANGES=false
+
+              for key in "${!NEW_ETAG[@]}"; do
+                if [ -z "${OLD_ETAG[$key]+x}" ]; then
+                  echo "Added:    $key"
+                  HAS_CHANGES=true
+                elif [ "${OLD_ETAG[$key]}" != "${NEW_ETAG[$key]}" ]; then
+                  echo "Modified: $key"
+                  HAS_CHANGES=true
+                fi
+              done
+
+              for key in "${!OLD_ETAG[@]}"; do
+                if [ -z "${NEW_ETAG[$key]+x}" ]; then
+                  echo "Removed:  $key"
+                  HAS_CHANGES=true
+                fi
+              done
+
+              if [ "$HAS_CHANGES" = true ]; then
                 echo "##vso[task.setvariable variable=hasChanges;isOutput=true]true"
               else
-                echo "No change since the last sync - nothing to approve."
+                echo "No tfvars files changed since the last sync - nothing to approve."
                 echo "##vso[task.setvariable variable=hasChanges;isOutput=true]false"
               fi
             name: checkChanges
-            displayName: "Compare bucket checksum to last sync"
+            displayName: "Diff bucket manifest against last sync"
 
   - stage: BucketSync
     displayName: "Sync tfvars bucket"
@@ -47,5 +68,5 @@ stages:
 
                 - script: |
                     set -e
-                    aws s3api list-objects-v2 --bucket df-iac-tfvars --query "Contents[].[Key,ETag]" --output text | sort | sha256sum | awk '{print $1}' > /home/ubuntu/tfvars/.bucket-checksum
-                  displayName: "Record synced checksum"
+                    aws s3api list-objects-v2 --bucket df-iac-tfvars --query "Contents[].[Key,ETag]" --output text | sort > /home/ubuntu/tfvars/.bucket-manifest
+                  displayName: "Record synced manifest"
