@@ -13,12 +13,10 @@ stages:
     jobs:
       - job: DevPlan
         displayName: "Plan (dev)"
-        variables:
-          - group: dev # ADO Library variable group - supplies infra_env and tfvarsUri
         steps:
           - template: /templates/terraform-plan-steps.yml
             parameters:
-              envDir: $(infra_env) # from ADO Library variable group
+              envDir: dev
 
   - stage: DevApply
     displayName: "Apply (dev)"
@@ -26,8 +24,6 @@ stages:
     jobs:
       - deployment: DevApply
         displayName: "Apply (dev)"
-        variables:
-          - group: dev # ADO Library variable group - supplies infra_env
         environment: dev-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
@@ -35,7 +31,7 @@ stages:
               steps:
                 - template: /templates/terraform-apply-steps.yml
                   parameters:
-                    envDir: $(infra_env) # from ADO Library variable group
+                    envDir: dev
 
   - stage: ProdPlan
     displayName: "Plan (prod)"
@@ -43,12 +39,10 @@ stages:
     jobs:
       - job: ProdPlan
         displayName: "Plan (prod)"
-        variables:
-          - group: prod # ADO Library variable group - supplies infra_env and tfvarsUri
         steps:
           - template: /templates/terraform-plan-steps.yml
             parameters:
-              envDir: $(infra_env) # from ADO Library variable group
+              envDir: prod
 
   - stage: ProdApply
     displayName: "Apply (prod)"
@@ -56,8 +50,6 @@ stages:
     jobs:
       - deployment: ProdApply
         displayName: "Apply (prod)"
-        variables:
-          - group: prod # ADO Library variable group - supplies infra_env
         environment: prod-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
@@ -65,4 +57,4 @@ stages:
               steps:
                 - template: /templates/terraform-apply-steps.yml
                   parameters:
-                    envDir: $(infra_env) # from ADO Library variable group
+                    envDir: prod
