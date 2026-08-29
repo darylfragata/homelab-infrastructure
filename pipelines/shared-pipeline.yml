@@ -13,12 +13,10 @@ stages:
     jobs:
       - job: SharedPlan
         displayName: "Plan (shared)"
-        variables:
-          - group: shared # ADO Library variable group - supplies infra_env and tfvarsUri
         steps:
           - template: /templates/terraform-plan-steps.yml
             parameters:
-              envDir: $(infra_env) # from ADO Library variable group
+              envDir: shared
 
   - stage: SharedApply
     displayName: "Apply (shared)"
@@ -26,8 +24,6 @@ stages:
     jobs:
       - deployment: SharedApply
         displayName: "Apply (shared)"
-        variables:
-          - group: shared # ADO Library variable group - supplies infra_env
         environment: shared-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
@@ -35,5 +31,4 @@ stages:
               steps:
                 - template: /templates/terraform-apply-steps.yml
                   parameters:
-                    envDir: $(infra_env) # from ADO Library variable group
-
+                    envDir: shared
