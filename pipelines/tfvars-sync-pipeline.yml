@@ -5,56 +5,47 @@ pool:
   name: AWS-Agents # self-hosted agent pool
 
 stages:
-  - stage: DevBucketSync
-    displayName: "Sync tfvars (dev)"
-    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
+  - stage: CheckForChanges
+    displayName: "Check for tfvars changes"
     jobs:
-      - deployment: DevBucketSync
-        displayName: "Sync tfvars (dev) to agent"
-        variables:
-          - group: dev # ADO Library variable group - supplies infra_env and tfvarsUri
-        environment: dev-deployment # ADO Environment - approval gate configured in Library UI, not here
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - template: /templates/tfvars-sync.yml
-                  parameters:
-                    envDir: $(infra_env) # from ADO Library variable group
-                    tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
+      - job: CheckForChanges
+        displayName: "Check for tfvars changes"
+        steps:
+          - script: |
+              set -e
+              NEW_CHECKSUM=$(aws s3api list-objects-v2 --bucket df-iac-tfvars --query "Contents[].[Key,ETag]" --output text | sort | sha256sum | awk '{print $1}')
+              CHECKSUM_FILE=/home/ubuntu/tfvars/.bucket-checksum
+              OLD_CHECKSUM=""
+              if [ -f "$CHECKSUM_FILE" ]; then
+                OLD_CHECKSUM=$(cat "$CHECKSUM_FILE")
+              fi
+              echo "Stored checksum: ${OLD_CHECKSUM:-<none>}"
+              echo "Bucket checksum: $NEW_CHECKSUM"
+              if [ "$NEW_CHECKSUM" != "$OLD_CHECKSUM" ]; then
+                echo "tfvars bucket has changed since the last sync."
+                echo "##vso[task.setvariable variable=hasChanges;isOutput=true]true"
+              else
+                echo "No change since the last sync - nothing to approve."
+                echo "##vso[task.setvariable variable=hasChanges;isOutput=true]false"
+              fi
+            name: checkChanges
+            displayName: "Compare bucket checksum to last sync"
 
-  - stage: ProdBucketSync
-    displayName: "Sync tfvars (prod)"
-    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
+  - stage: BucketSync
+    displayName: "Sync tfvars bucket"
+    dependsOn: CheckForChanges
+    condition: eq(dependencies.CheckForChanges.outputs['CheckForChanges.checkChanges.hasChanges'], 'true')
     jobs:
-      - deployment: ProdBucketSync
-        displayName: "Sync tfvars (prod) to agent"
-        variables:
-          - group: prod # ADO Library variable group - supplies infra_env and tfvarsUri
-        environment: prod-deployment # ADO Environment - approval gate configured in Library UI, not here
+      - deployment: BucketSync
+        displayName: "Sync tfvars bucket to agent"
+        environment: tfvars-deployment # ADO Environment - approval gate configured in Library UI, not here
         strategy:
           runOnce:
             deploy:
               steps:
                 - template: /templates/tfvars-sync.yml
-                  parameters:
-                    envDir: $(infra_env) # from ADO Library variable group
-                    tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
 
-  - stage: SharedBucketSync
-    displayName: "Sync tfvars (shared)"
-    dependsOn: [] # explicit - no dependency, runs automatically on every trigger
-    jobs:
-      - deployment: SharedBucketSync
-        displayName: "Sync tfvars (shared) to agent"
-        variables:
-          - group: shared # ADO Library variable group - supplies infra_env and tfvarsUri
-        environment: shared-deployment # ADO Environment - approval gate configured in Library UI, not here
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-                - template: /templates/tfvars-sync.yml
-                  parameters:
-                    envDir: $(infra_env) # from ADO Library variable group
-                    tfvarsS3Uri: $(tfvarsUri) # from ADO Library variable group
+                - script: |
+                    set -e
+                    aws s3api list-objects-v2 --bucket df-iac-tfvars --query "Contents[].[Key,ETag]" --output text | sort | sha256sum | awk '{print $1}' > /home/ubuntu/tfvars/.bucket-checksum
+                  displayName: "Record synced checksum"
