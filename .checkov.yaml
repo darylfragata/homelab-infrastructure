@@ -1,0 +1,4 @@
+skip-check:
+  - CKV_AWS_62 # IAM policy allows full admin (wildcard action + resource) - modules/ado_agent's instance role intentionally needs broad access to manage this homelab's AWS footprint from the single self-hosted agent
+  - CKV_AWS_63 # IAM policy statement uses "*" as its action - same modules/ado_agent instance role
+  - CKV_AWS_355 # IAM policy statement uses "*" as its resource - same modules/ado_agent instance role
